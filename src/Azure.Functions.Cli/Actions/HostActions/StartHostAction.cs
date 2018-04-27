@@ -1,4 +1,13 @@
-﻿using Azure.Functions.Cli.Actions.HostActions.WebHost.Security;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Azure.Functions.Cli.Actions.HostActions.WebHost.Security;
 using Azure.Functions.Cli.Common;
 using Azure.Functions.Cli.Diagnostics;
 using Azure.Functions.Cli.Extensions;
@@ -18,25 +27,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading.Tasks;
 using static Azure.Functions.Cli.Common.OutputTheme;
 using static Colors.Net.StringStaticMethods;
-
 
 namespace Azure.Functions.Cli.Actions.HostActions
 {
     [Action(Name = "start", Context = Context.Host, HelpText = "Launches the functions runtime host")]
+    [Action(Name = "start", HelpText = "Launches the functions runtime host")]
     internal class StartHostAction : BaseAction
     {
-        const int DefaultPort = 7071;
-        const int DefaultTimeout = 20;
+        private const int DefaultPort = 7071;
+        private const int DefaultTimeout = 20;
         private readonly ISecretsManager _secretsManager;
 
         public int Port { get; set; }
@@ -52,8 +53,6 @@ namespace Azure.Functions.Cli.Actions.HostActions
         public string CertPassword { get; set; }
 
         public DebuggerType Debugger { get; set; }
-
-        public string ScriptRoot { get; set; }
 
         public IDictionary<string, string> IConfigurationArguments { get; set; } = new Dictionary<string, string>()
         {
@@ -124,15 +123,6 @@ namespace Azure.Functions.Cli.Actions.HostActions
                     }
                 });
 
-            Parser
-                .Setup<string>("script-root")
-                .WithDescription($"The path to the root of the function app where the command will be executed.")
-                .SetDefault(".")
-                .Callback(dir => {
-                    var fullDirPath = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, dir));
-                    ScriptRoot = ScriptHostHelpers.GetFunctionAppRootDirectory(fullDirPath);
-                });
-
             return Parser.Parse(args);
         }
 
@@ -161,7 +151,8 @@ namespace Azure.Functions.Cli.Actions.HostActions
             return defaultBuilder
                 .UseSetting(WebHostDefaults.ApplicationKey, typeof(Startup).Assembly.GetName().Name)
                 .UseUrls(baseAddress.ToString())
-                .ConfigureAppConfiguration(configBuilder => {
+                .ConfigureAppConfiguration(configBuilder =>
+                {
                     configBuilder.AddEnvironmentVariables()
                         .AddCommandLine(arguments);
                 })
@@ -201,10 +192,10 @@ namespace Azure.Functions.Cli.Actions.HostActions
 
         public override async Task RunAsync()
         {
+            PreRunConditions();
             Utilities.PrintLogo();
 
-            var traceLevel = await ScriptHostHelpers.GetTraceLevel(ScriptRoot);
-            var settings = SelfHostWebHostSettingsFactory.Create(traceLevel, ScriptRoot);
+            var settings = SelfHostWebHostSettingsFactory.Create(Environment.CurrentDirectory);
 
             (var baseAddress, var certificate) = Setup();
 
@@ -217,12 +208,19 @@ namespace Azure.Functions.Cli.Actions.HostActions
             ColoredConsole.WriteLine($"Listening on {baseAddress}");
             ColoredConsole.WriteLine("Hit CTRL-C to exit...");
 
-            DisableCoreLogging(manager);
             DisplayHttpFunctionsInfo(manager, baseAddress);
             DisplayDisabledFunctions(manager);
             await SetupDebuggerAsync(baseAddress);
 
             await runTask;
+        }
+
+        private void PreRunConditions()
+        {
+            if (_secretsManager.GetSecrets().Any(p => p.Key == Constants.FunctionsWorkerRuntime && p.Value == "Python"))
+            {
+                PythonHelpers.VerifyVirtualEnvironment();
+            }
         }
 
         private void DisplayDisabledFunctions(WebScriptHostManager hostManager)
@@ -233,14 +231,6 @@ namespace Azure.Functions.Cli.Actions.HostActions
                 {
                     ColoredConsole.WriteLine(WarningColor($"Function {function.Name} is disabled."));
                 }
-            }
-        }
-
-        private static void DisableCoreLogging(WebScriptHostManager hostManager)
-        {
-            if (hostManager != null)
-            {
-                hostManager.Instance.ScriptConfig.HostConfig.Tracing.ConsoleLevel = System.Diagnostics.TraceLevel.Off;
             }
         }
 
@@ -406,7 +396,7 @@ namespace Azure.Functions.Cli.Actions.HostActions
 
                 services.AddWebJobsScriptHostAuthorization();
 
-                services.AddSingleton<ILoggerFactoryBuilder, ConsoleLoggerFactoryBuilder>();
+                services.AddSingleton<ILoggerProviderFactory, ConsoleLoggerProviderFactory>();
                 services.AddSingleton<WebHostSettings>(_hostSettings);
 
                 return services.AddWebJobsScriptHost(_builderContext.Configuration);

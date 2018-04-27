@@ -1,12 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using ARMClient.Authentication;
-using ARMClient.Authentication.AADAuthentication;
-using ARMClient.Authentication.Contracts;
-using ARMClient.Library;
 using Autofac;
 using FluentAssertions;
 using Azure.Functions.Cli.Actions;
@@ -18,6 +11,7 @@ using Azure.Functions.Cli.Common;
 using Azure.Functions.Cli.Interfaces;
 using NSubstitute;
 using Xunit;
+using System.IO.Abstractions;
 
 namespace Azure.Functions.Cli.Tests.ActionsTests
 {
@@ -50,11 +44,9 @@ namespace Azure.Functions.Cli.Tests.ActionsTests
         [InlineData("settings delete settingName", typeof(DeleteSettingAction))]
         [InlineData("settings list", typeof(ListSettingsAction))]
         [InlineData("init", typeof(InitAction))]
-        [InlineData("run functionName", typeof(RunFunctionAction))]
-        [InlineData("function run functionName", typeof(RunFunctionAction))]
-        [InlineData("-v", typeof(HelpAction))]
-        [InlineData("-version", typeof(HelpAction))]
-        [InlineData("--version", typeof(HelpAction))]
+        [InlineData("-v", null)]
+        [InlineData("-version", null)]
+        [InlineData("--version", null)]
         [InlineData("", typeof(HelpAction))]
         [InlineData("help", typeof(HelpAction))]
         [InlineData("WrongName", typeof(HelpAction))]
@@ -69,10 +61,21 @@ namespace Azure.Functions.Cli.Tests.ActionsTests
         [InlineData("proxy list", typeof(ListProxiesAction))]
         public void ResolveCommandLineCorrectly(string args, Type type)
         {
+            var fileSystem = Substitute.For<IFileSystem>();
+            fileSystem.File.Exists(Arg.Any<string>()).Returns(true);
+            FileSystemHelpers.Instance = fileSystem;
+
             var container = InitializeContainerForTests();
-            var app = new ConsoleApp(args.Split(' ').ToArray(), type.Assembly, container);
+            var app = new ConsoleApp(args.Split(' ').ToArray(), typeof(Program).Assembly, container);
             var result = app.Parse();
-            result.Should().BeOfType(type);
+            if (returnType == null)
+            {
+                result.Should().BeNull();
+            }
+            else
+            {
+                result.Should().BeOfType(returnType);
+            }
         }
 
         private IContainer InitializeContainerForTests()
@@ -82,16 +85,12 @@ namespace Azure.Functions.Cli.Tests.ActionsTests
             builder.RegisterType<FunctionsLocalServer>()
                 .As<IFunctionsLocalServer>();
 
-            builder.Register(c => new PersistentAuthHelper { AzureEnvironments = AzureEnvironments.Prod })
-                .As<IAuthHelper>();
-
             builder.Register(_ => new PersistentSettings())
                 .As<ISettings>()
-                .SingleInstance()
-                .ExternallyOwned();
+                .SingleInstance();
 
-            builder.Register(c => new AzureClient(retryCount: 3, authHelper: c.Resolve<IAuthHelper>()))
-                .As<IAzureClient>();
+            builder.RegisterType<ArmTokenManager>()
+                .As<IArmTokenManager>();
 
             builder.RegisterType<ArmManager>()
                 .As<IArmManager>();

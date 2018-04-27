@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Globalization;
 
 namespace Azure.Functions.Cli.Arm.Models
@@ -28,6 +28,16 @@ namespace Azure.Functions.Cli.Arm.Models
         public string PublishingPassword { get; set; }
 
         public string ScmType { get; set; }
+
+        public string Kind { get; set; }
+
+        public string Sku { get; set; }
+
+        public bool IsLinux
+            => Kind?.IndexOf("linux", StringComparison.OrdinalIgnoreCase) >= 0;
+
+        public bool IsDynamicLinux
+            =>  IsLinux && Sku?.Equals("dynamic", StringComparison.OrdinalIgnoreCase) == true;
 
         public Site(string subscriptionId, string resourceGroupName, string name)
             : base(subscriptionId, resourceGroupName)

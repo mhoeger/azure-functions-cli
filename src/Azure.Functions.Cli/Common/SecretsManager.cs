@@ -2,12 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
 using Azure.Functions.Cli.Interfaces;
-using Colors.Net;
-using static Azure.Functions.Cli.Common.OutputTheme;
 using Azure.Functions.Cli.Helpers;
 using Newtonsoft.Json.Linq;
 using Microsoft.Azure.WebJobs.Script;
@@ -16,7 +13,6 @@ namespace Azure.Functions.Cli.Common
 {
     internal class SecretsManager : ISecretsManager
     {
-        private static bool warningPrinted = false;
         private const string reason = "secrets.manager.1";
 
         public static string AppSettingsFilePath

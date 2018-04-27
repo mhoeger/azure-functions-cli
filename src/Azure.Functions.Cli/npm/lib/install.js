@@ -16,7 +16,7 @@ function getPath() {
     if (fs.existsSync(bin)) {
         rimraf.sync(bin);
     }
-    return bin;
+    return bin
 }
 
 var url = 'https://functionscdn.azureedge.net/public/' + version + '/Azure.Functions.Cli.zip';
@@ -41,22 +41,7 @@ https.get(url, function (response) {
             process.exit(1);
         }
     })
-    .on('error', function (err) {
+    .on('error', err => {
         console.error(chalk.red(err));
         process.exit(1);
     });
-
-function installWorkers(installPath) {
-  glob(`${installPath}/workers/*/*.targets`, (err, files) => {
-    if (err)
-      return console.error(chalk.red(err));
-    files.forEach(runTarget);
-  });
-}
-
-function runTarget(targetsFile) {
-  var workingDirectory = path.dirname(targetsFile);
-  console.log(`Language worker install targets found in '${workingDirectory}'.`);
-  console.log(`Executing 'dotnet msbuild ${targetsFile}'.`);
-  execSync(`dotnet msbuild ${targetsFile}`, { cwd: workingDirectory, stdio: [0, 1, 2] });
-}

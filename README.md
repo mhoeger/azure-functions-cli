@@ -1,20 +1,29 @@
 ﻿![Azure Functions Logo](https://raw.githubusercontent.com/Azure/azure-functions-cli/master/src/Azure.Functions.Cli/npm/assets/azure-functions-logo-color-raster.png)
 
-|Branch|Status|
-|---|---|
-|master|[![Build status](https://ci.appveyor.com/api/projects/status/max86pwo54y44j36/branch/master?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-cli/branch/master)|
+|Branch|Windows|Linux
+|---|---|---|
+|master|[![Build status](https://ci.appveyor.com/api/projects/status/max86pwo54y44j36/branch/master?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-cli/branch/master)| [![Build status](https://ci.appveyor.com/api/projects/status/m950ifgopq49l7gw?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-core-tools)|
+|v1.x|[![Build status](https://ci.appveyor.com/api/projects/status/max86pwo54y44j36/branch/v1.x?svg=true)](https://ci.appveyor.com/project/appsvc/azure-functions-cli/branch/v1.x)| `N/A`|
 
 # Azure Functions Core Tools
 
 The Azure Functions Core Tools provide a local development experience for creating, developing, testing, running, and debugging Azure Functions.
 
+## Versions
+
+**v1** (v1.x branch): Requires .NET 4.7.1 Windows Only
+
+**v2** (master branch): Self-contained cross-platform package
+
 ## Installing
 
-**NOTE**: This package only currently works on Windows, since the underlying Functions Host is not yet cross-platform. You can upvote this GitHub issue if you're interested in running on other platforms: [make the Azure Functions Core Tools cross platform](https://github.com/Azure/azure-functions-cli/issues/13).
+### Windows
 
 To install globally for Windows:
 
-```
+To install v1 with npm:
+
+```bash
 npm i -g azure-functions-core-tools
 ```
 
@@ -34,122 +43,114 @@ There is a dependency on the .NET Core tools for the cross platform support. You
 
 The package sets up the following global aliases:
 
-```
-func
-azfun
-azure-functions
+```bash
+choco install azure-functions-core-tools
 ```
 
-## Commands
+To install v2 with npm:
 
-Commands have the following basic structure:
-
-```
-func [context] [context] <action> [-/--options]
+```bash
+npm i -g azure-functions-core-tools@core --unsafe-perm true
 ```
 
-Output can be found at *%temp%\LogFiles*.
+To install v2 with chocolatey:
 
-### Contexts
-
-```
-azure        For Azure login and working with Function Apps on Azure
-function     For local function settings and actions
-functionapp  For local function app settings and actions
-host         For local Functions host settings and actions
-settings     For local settings for your Functions host
+```bash
+choco install azure-functions-core-tools --pre
 ```
 
-### Top-level actions
+### Mac
 
-```
-func init    Create a new Function App in the current folder. Initializes git repo.
-func run     Run a function directly
-```
+**Homebrew**:
 
-### Azure actions
-
-Actions in the "azure" context require logging in to Azure.
-
-```
-func azure
-
-Usage: func azure [context] <action> [-/--options]
-
-Contexts:
-account        For Azure account and subscriptions settings and actions
-functionapp    For Azure Function App settings and actions
-storage        For Azure Storage settings and actions
-subscriptions  For Azure account and subscriptions settings and actions
-
-Actions:
-get-publish-username  Get the source control publishing username for a Function App in Azure
-set-publish-password  Set the source control publishing password for a Function App in Azure
-login                 Log in to an Azure account. Can also do "func azure login"
-logout                Log out of Azure account. Can also do "func azure logout"
-portal                Launch default browser with link to the current app in https://portal.azure.com
+```bash
+brew tap azure/functions
+brew install azure-functions-core-tools
 ```
 
-```
-func azure account
-Usage: func azure account <action> [-/--options]
+### Linux
 
-Actions:
-set <subscriptionId> Set the active subscription
-list  List subscriptions for the logged in user
-```
+#### Ubuntu/Debian
 
-```
-func azure functionapp
-Usage: func azure functionapp <action> [-/--options]
+1. Register the Microsoft Product key as trusted
 
-Actions:
-enable-git-repo     Enable git repository on your Azure-hosted Function App
-fetch-app-settings  Retrieve App Settings from your Azure-hosted Function App and store locally. Alias: fetch
-list                List all Function Apps in the selected Azure subscription
+```bash
+curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
 ```
 
-The `func azure storage list` command will show storage accounts in the selected subscription. You can then set up a connection string locally with this storage account name using `func settings add-storage-account`.
+2. Set up package feed
+##### Ubuntu 17.10
 
-```
-func azure storage
-Usage: func Azure Storage <action> [-/--options]
-
-Actions:
-list  List all Storage Accounts in the selected Azure subscription
+```bash
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-artful-prod artful main" > /etc/apt/sources.list.d/dotnetdev.list'
+sudo apt-get update
 ```
 
-### Local actions
+##### Ubuntu 17.04
 
-Actions that are not in the "azure" context operate on the local environment. For instance, `func settings list` will show the app settings for the current function app.
-
-```
-func settings
-Usage: func settings [context] <action> [-/--options]
-
-Actions:
-add                  Add new local app setting to appsettings.json
-add-storage-account  Add a local app setting using the value from an Azure Storage account. Requires Azure login.
-decrypt              Decrypt the local settings file
-delete               Remove a local setting
-encrypt              Encrypt the local settings file
-list                 List local settings
+```bash
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-zesty-prod zesty main" > /etc/apt/sources.list.d/dotnetdev.list'
+sudo apt-get update
 ```
 
-```
-func function
-Usage: func function [context] <action> [-/--options]
+##### Ubuntu 16.04 / Linux Mint 18
 
-Actions:
-create  Create a new Function from a template, using the Yeoman generator
-run     Run a function directly
+```bash
+sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-xenial-prod xenial main" > /etc/apt/sources.list.d/dotnetdev.list'
+sudo apt-get update
 ```
 
-For consistency, the `func init` command can also be invoked via `func functionapp init`.
+3. Install
 
+```bash
+sudo apt-get install azure-functions-core-tools
 ```
-func functionapp init
+
+#### Fedora/CentOS/Red Hat/openSUSE
+
+1. Register the Microsoft signature key
+
+```bash
+sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
 ```
+
+2. Set up package feed
+##### yum
+
+```bash
+sudo sh -c 'echo -e "[packages-microsoft-com-prod]\nname=packages-microsoft-com-prod \nbaseurl=https://packages.microsoft.com/yumrepos/microsoft-rhel7.3-prod\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/dotnetdev.repo'
+```
+
+##### zypper
+
+```bash
+sudo sh -c 'echo -e "[packages-microsoft-com-prod]\nname=packages-microsoft-com-prod \nbaseurl=https://packages.microsoft.com/yumrepos/microsoft-rhel7.3-prod\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/zypp/repos.d/dotnetdev.repo'
+```
+
+3. Install
+##### yum
+
+```bash
+sudo yum install azure-functions-core-tools
+```
+
+##### zypper
+
+```bash
+sudo zypper install azure-functions-core-tools
+```
+
+[Code and test Azure Functions locally](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local)
+
+**NOTE**: npm can be used on all platforms. On unix platforms, you may need to specify `--unsafe-perm` if you are running npm with sudo. That's due to npm behavior of post install script.
+
+
+**NOTE**: If you're running the v2 on Windows, Linux, or Mac, make sure to [enable the `beta` runtime](https://docs.microsoft.com/en-us/azure/azure-functions/functions-versions#target-the-version-20-runtime) in function app settings, otherwise you may not see the same results as running locally.
+
+## Known Issues:
+
+`func extensions` command require the `dotnet` cli to be installed and on your path. This requirement is tracked [here](https://github.com/Azure/azure-functions-core-tools/issues/367). You can install .NET Core for your platform from https://www.microsoft.com/net/download/
 
 ## Default Directories
 

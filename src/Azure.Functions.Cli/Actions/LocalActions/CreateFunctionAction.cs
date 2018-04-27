@@ -6,7 +6,6 @@ using Azure.Functions.Cli.Helpers;
 using Azure.Functions.Cli.Interfaces;
 using Colors.Net;
 using Fclp;
-using System.Runtime.InteropServices;
 using static Azure.Functions.Cli.Common.OutputTheme;
 
 namespace Azure.Functions.Cli.Actions.LocalActions
@@ -17,26 +16,30 @@ namespace Azure.Functions.Cli.Actions.LocalActions
     internal class CreateFunctionAction : BaseAction
     {
         private readonly ITemplatesManager _templatesManager;
+        private readonly ISecretsManager _secretsManager;
 
         public string Language { get; set; }
         public string TemplateName { get; set; }
         public string FunctionName { get; set; }
 
-        public CreateFunctionAction(ITemplatesManager templatesManager)
+        public CreateFunctionAction(ITemplatesManager templatesManager, ISecretsManager secretsManager)
         {
             _templatesManager = templatesManager;
+            _secretsManager = secretsManager;
         }
 
         public override ICommandLineParserResult ParseArgs(string[] args)
         {
             Parser
                 .Setup<string>('l', "language")
-                .WithDescription("Template programming language, such as C#, F#, JavaScript, etc.")
+                .WithDescription($"Template programming language, such as C#, F#, JavaScript, etc.")
                 .Callback(l => Language = l);
+
             Parser
                 .Setup<string>('t', "template")
                 .WithDescription("Template name")
                 .Callback(t => TemplateName = t);
+
             Parser
                 .Setup<string>('n', "name")
                 .WithDescription("Function name")
@@ -48,19 +51,19 @@ namespace Azure.Functions.Cli.Actions.LocalActions
         {
             if (Console.IsOutputRedirected || Console.IsInputRedirected)
             {
-                if (string.IsNullOrEmpty(Language) ||
-                    string.IsNullOrEmpty(TemplateName) ||
+                if (string.IsNullOrEmpty(TemplateName) ||
                     string.IsNullOrEmpty(FunctionName))
                 {
                     ColoredConsole
                         .Error
-                        .WriteLine(ErrorColor("Running with stdin\\stdout redirected. Command must specify --language, --template, and --name explicitly."))
+                        .WriteLine(ErrorColor("Running with stdin\\stdout redirected. Command must specify --template, and --name explicitly."))
                         .WriteLine(ErrorColor("See 'func help function' for more details"));
                     return;
                 }
             }
 
             var templates = await _templatesManager.Templates;
+            templates = templates.Concat(_templatesManager.PythonTemplates);
 
             ColoredConsole.Write("Select a language: ");
             var language = Language ?? ConsoleHelper.DisplaySelectionWizard(templates.Select(t => t.Metadata.Language).Distinct());

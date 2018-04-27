@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using System.Text;
+﻿using System.Text;
 using Newtonsoft.Json;
 
 namespace Azure.Functions.Cli.Common
@@ -28,6 +27,10 @@ namespace Azure.Functions.Cli.Common
             if (FileSystemHelpers.FileExists(path))
             {
                 T value = JsonConvert.DeserializeObject<T>(FileSystemHelpers.ReadAllTextFromFile(path));
+                if (value == null)
+                {
+                    value = new T();
+                }
                 return new DiskBacked<T>(value, path);
             }
             return new DiskBacked<T>(new T(), path);

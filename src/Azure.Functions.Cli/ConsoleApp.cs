@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Autofac;
 using Azure.Functions.Cli.Actions;
@@ -24,6 +23,7 @@ namespace Azure.Functions.Cli
         private readonly string[] _args;
         private readonly IEnumerable<TypeAttributePair> _actionAttributes;
         private readonly string[] _helpArgs = new[] { "help", "h", "?" };
+        private readonly string[] _versionArgs = new[] { "version", "v" };
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1004:GenericMethodsShouldProvideTypeParameter")]
         public static void Run<T>(string[] args, IContainer container)
@@ -172,6 +172,11 @@ namespace Azure.Functions.Cli
         /// </summary>
         internal IAction Parse()
         {
+            if (_args.Length == 1 && _versionArgs.Any(va => _args[0].Replace("-", "").Equals(va, StringComparison.OrdinalIgnoreCase)))
+            {
+                ColoredConsole.WriteLine($"{Constants.CliDisplayVersion}");
+                return null;
+            }
             // If there is no args are passed, display help.
             // If args are passed and any it matched any of the strings in _helpArgs with a "-" then display help.
             // Otherwise, continue parsing.
@@ -207,7 +212,7 @@ namespace Azure.Functions.Cli
                     ? _args.Where(a => !a.StartsWith("-") || argsHelpIntersection.Contains(a.Replace("-", "").ToLowerInvariant()))
                     : _args;
             }
- 
+
             // We'll need to grab context arg: string, subcontext arg: string, action arg: string
             var contextStr = string.Empty;
             var subContextStr = string.Empty;
@@ -267,7 +272,7 @@ namespace Azure.Functions.Cli
             // We expect to find 1 and only 1 IAction that matches all 3 (context, subContext, action)
             var actionType = _actionAttributes
                 .Where(a => a.Attribute.Name.Equals(actionStr, StringComparison.OrdinalIgnoreCase) &&
-                            a.Attribute.Context == context && 
+                            a.Attribute.Context == context &&
                             a.Attribute.SubContext == subContext)
                 .SingleOrDefault();
 
@@ -283,6 +288,9 @@ namespace Azure.Functions.Cli
             // Grab whatever is left in the stack of args into an array.
             // This will be passed into the action as actions can optionally take args for their options.
             var args = argsStack.ToArray();
+
+            // Check if there is a --prefix or --script-root and update CurrentDirectory
+            UpdateCurrentDirectory(args);
             try
             {
                 // Give the action a change to parse its args.
@@ -304,6 +312,47 @@ namespace Azure.Functions.Cli
                 // This happens for actions that expect an ordered untyped options.
                 ColoredConsole.Error.WriteLine(ex.Message);
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// This method will update Environment.CurrentDirectory
+        /// if there is a --script-root or a --prefix provided on the commandline
+        /// </summary>
+        /// <param name="args">args to check for --prefix or --script-root</param>
+        private void UpdateCurrentDirectory(string[] args)
+        {
+            // assume index of -1 means the string is not there
+            int index = -1;
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (args[i].Equals("--script-root", StringComparison.OrdinalIgnoreCase)
+                    || args[i].Equals("--prefix", StringComparison.OrdinalIgnoreCase))
+                {
+                    // update the index to point to the following entry in args
+                    // which should contain the path for a prefix
+                    index = i + 1;
+                    break;
+                }
+            }
+
+            // make sure index still in the array
+            if (index != -1 && index < args.Length)
+            {
+                // Path.Combine takes care of checking if the path is full path or not.
+                // For example, Path.Combine(@"C:\temp", @"dir\dir")    => "C:\temp\dir\dir"
+                //              Path.Combine(@"C:\temp", @"C:\Windows") => "C:\Windows"
+                //              Path.Combine("/usr/bin", "dir/dir")     => "/usr/bin/dir/dir"
+                //              Path.Combine("/usr/bin", "/opt/dir")    => "/opt/dir"
+                var path = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, args[index]));
+                if (FileSystemHelpers.DirectoryExists(path))
+                {
+                    Environment.CurrentDirectory = path;
+                }
+                else
+                {
+                    throw new CliException($"\"{path}\" doesn't exist.");
+                }
             }
         }
 

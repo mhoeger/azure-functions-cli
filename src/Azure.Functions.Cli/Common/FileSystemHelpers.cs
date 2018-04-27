@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Abstractions;
@@ -32,6 +31,11 @@ namespace Azure.Functions.Cli.Common
         public static string ReadAllTextFromFile(string path)
         {
             return Instance.File.ReadAllText(path);
+        }
+
+        public static void Copy(string source, string destination, bool overwrite = false)
+        {
+            Instance.File.Copy(source, destination, overwrite);
         }
 
         public static async Task<string> ReadAllTextFromFileAsync(string path)
@@ -92,9 +96,9 @@ namespace Azure.Functions.Cli.Common
             DeleteFileSystemInfo(Instance.DirectoryInfo.FromDirectoryName(path), ignoreErrors);
         }
 
-        internal static IEnumerable<string> GetFiles(string directoryPath, IEnumerable<string> excludedDirectories = null, IEnumerable<string> excludedFiles = null)
+        internal static IEnumerable<string> GetFiles(string directoryPath, IEnumerable<string> excludedDirectories = null, IEnumerable<string> excludedFiles = null, string searchPattern = "*")
         {
-            foreach (var file in Instance.Directory.GetFiles(directoryPath, "*", SearchOption.TopDirectoryOnly))
+            foreach (var file in Instance.Directory.GetFiles(directoryPath, searchPattern, SearchOption.TopDirectoryOnly))
             {
                 var fileName = Path.GetFileName(file);
                 if (excludedFiles == null ||
@@ -110,7 +114,7 @@ namespace Azure.Functions.Cli.Common
                 if (excludedDirectories == null ||
                     !excludedDirectories.Any(d => d.Equals(directoryName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    foreach (var file in GetFiles(directory, excludedDirectories, excludedFiles))
+                    foreach (var file in GetFiles(directory, excludedDirectories, excludedFiles, searchPattern))
                     {
                         yield return file;
                     }
@@ -118,9 +122,14 @@ namespace Azure.Functions.Cli.Common
             }
         }
 
-        internal static IEnumerable<string> GetDirectories(string scriptPath)
+        internal static bool FileExists(object funcIgnoreFile)
         {
-            return Instance.Directory.GetDirectories(scriptPath);
+            throw new NotImplementedException();
+        }
+
+        internal static IEnumerable<string> GetDirectories(string path)
+        {
+            return Instance.Directory.GetDirectories(path);
         }
 
         private static void DeleteFileSystemInfo(FileSystemInfoBase fileSystemInfo, bool ignoreErrors)

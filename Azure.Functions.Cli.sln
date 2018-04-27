@@ -13,9 +13,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5F51C958-39C
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{6EE1D011-2334-44F2-9D41-608B969DAE6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azure.Functions.Cli", "src\Azure.Functions.Cli\Azure.Functions.Cli.csproj", "{6608738C-3BDB-47F5-BC62-66A8BDF9D884}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azure.Functions.Cli", "src\Azure.Functions.Cli\Azure.Functions.Cli.csproj", "{6608738C-3BDB-47F5-BC62-66A8BDF9D884}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Azure.Functions.Cli.Tests", "test\Azure.Functions.Cli.Tests\Azure.Functions.Cli.Tests.csproj", "{C57EBA1F-1C48-451A-80D6-F6AA7C881CF8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Azure.Functions.Cli.Tests", "test\Azure.Functions.Cli.Tests\Azure.Functions.Cli.Tests.csproj", "{EAEA6EDB-A301-4A50-86D8-91859DABE30E}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{3FD809C2-9986-4659-A82A-CE7B165530E6}"
 EndProject
